@@ -18,6 +18,7 @@ set(SOURCES
    contains.cpp
    convex_hull.cpp
    dynamic_convex_hull.cpp
+   douglas_pecker.cpp
    convex.cpp
 )
 
