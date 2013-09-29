@@ -19,7 +19,7 @@ namespace visualization
 
    void draw(drawer_type & drawer, contour_2f const & cnt, bool draw_vertices)
    {
-      contour_circulator beg(cnt), it = beg;
+      contour_circulator beg(cnt.begin(), cnt.end()), it = beg;
 
       do
       {

@@ -6,28 +6,27 @@
 namespace cg {
 namespace common
 {
-   template<typename BidirectionalRange>
+   template<class BidIter>
    struct range_circulator
    {
-      typedef typename boost::range_const_iterator<BidirectionalRange>::type  iterator_type;
-      typedef typename iterator_type::value_type                              value_type;
+      typedef typename BidIter::value_type value_type;
 
-      explicit range_circulator(BidirectionalRange const & range)
-         : beg_(range.begin())
-         , end_(range.end())
-         , it_(range.begin())
+      range_circulator(BidIter begin, BidIter end)
+         : beg_(begin)
+         , end_(end)
+         , it_(begin)
       {}
 
-      range_circulator(BidirectionalRange const & range, iterator_type it)
-         : beg_(range.begin())
-         , end_(range.end())
+      range_circulator(BidIter begin, BidIter end, BidIter it)
+         : beg_(begin)
+         , end_(end)
          , it_(it)
       {}
 
       value_type const & operator *  () const { return *it_;  }
       value_type const * operator -> () const { return &*it_; }
 
-      iterator_type iter() const { return it_; }
+      BidIter iter() const { return it_; }
 
       range_circulator & operator ++ ()
       {
@@ -59,22 +58,35 @@ namespace common
          return tmp;
       }
 
+      const range_circulator operator + (int i)
+      {
+         range_circulator tmp = *this;
+         while(i-- > 0)
+            ++tmp;
+         return tmp;
+      }
+
+      const range_circulator operator - (int i)
+      {
+         range_circulator tmp = *this;
+         while(i-- > 0)
+            --tmp;
+         return tmp;
+      }
+
       template<typename Range>
       friend bool operator == (   range_circulator<Range> const & a,
                                   range_circulator<Range> const & b  );
 
    private:
-      iterator_type beg_, end_, it_;
+      BidIter beg_, end_, it_;
    };
 
    template<typename Range>
    bool operator == (  range_circulator<Range> const & a,
                        range_circulator<Range> const & b  )
    {
-      assert(a.beg_ == b.beg_);
-      assert(a.end_ == b.end_);
-
-      return a.it_ == b.it_;
+      return a.it_ == b.it_ && a.beg_ == b.beg_ && a.end_ == b.end_;
    }
 
    template<typename Range>

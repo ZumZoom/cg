@@ -1,6 +1,7 @@
 #pragma once
 
 #include "range.h"
+#include <math.h>
 
 namespace cg
 {
@@ -26,6 +27,8 @@ namespace cg
          : x(x)
          , y(y)
       {}
+
+      double length() const { return sqrt((*this) * (*this)); }
    };
 
    template <class Scalar>

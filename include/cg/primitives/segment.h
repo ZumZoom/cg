@@ -21,6 +21,8 @@ namespace cg
       point_2t<Scalar> &         operator [] (size_t id)       { return pts_[id]; }
       point_2t<Scalar> const &   operator [] (size_t id) const { return pts_[id]; }
 
+      double length() const { return (pts_[1] - pts_[0]).length(); }
+
    private:
       boost::array<point_2t<Scalar>, 2 > pts_;
    };

@@ -21,7 +21,7 @@ namespace cg
       {}
 
       typedef typename std::vector<point_2t<Scalar> >::const_iterator const_iterator;
-      typedef typename common::range_circulator<contour_2t<Scalar> > circulator_t;
+      typedef typename common::range_circulator<contour_2t<Scalar>::const_iterator> circulator_t;
 
       const_iterator begin() const
       {
@@ -34,12 +34,12 @@ namespace cg
 
       circulator_t circulator() const
       {
-         return common::range_circulator<contour_2t<Scalar> >(*this);
+         return common::range_circulator<contour_2t<Scalar>::const_iterator>(this->begin(), this->end());
       }
 
       circulator_t circulator(const_iterator itr) const
       {
-         return common::range_circulator<contour_2t<Scalar> >(*this, itr);
+         return common::range_circulator<contour_2t<Scalar>::const_iterator>(this->begin(), this->end(), itr);
       }
 
       size_t vertices_num() const
@@ -73,5 +73,5 @@ namespace cg
       std::vector<point_2t<Scalar> > pts_;
    };
 
-   typedef common::range_circulator<contour_2f> contour_circulator;
+   typedef common::range_circulator<contour_2f::const_iterator> contour_circulator;
 }
