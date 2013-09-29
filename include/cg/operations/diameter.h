@@ -6,6 +6,8 @@
 #include <cg/common/range.h>
 #include <cg/common/common.h>
 
+#include <cg/operations/distance.h>
+
 namespace cg
 {
 	template<class BidIter>
@@ -16,7 +18,7 @@ namespace cg
 
 		auto maxDistanceEdgePoint = [](const point_2t<Scalar> & p, const segment_2t<Scalar> & s)
 		{
-			return std::max(distance(s[0], p), distance(s[1], p));
+			return distance2(s[0], p, s[1], p);
 		};
 
 		end = andrew_hull(begin, end);
@@ -28,32 +30,31 @@ namespace cg
 
 		segment_2t<Scalar> edge(*begin, *std::next(begin));
 
-		BidIter tmp = std::max_element(begin, end,
-			[&](const point_2t<Scalar> & a, const point_2t<Scalar> & b) 
-			{ return maxDistanceEdgePoint(a, edge) < maxDistanceEdgePoint(b, edge); });
+		auto pointToEdgeCmp = [&](const point_2t<Scalar> & a, const point_2t<Scalar> & b) 
+			{
+				size_t ind_a = maxDistanceEdgePoint(a, edge) == CG_FIRST ? 0 : 1;
+				size_t ind_b = maxDistanceEdgePoint(b, edge) == CG_FIRST ? 0 : 1;
+				return distance2(a, edge[ind_a], b, edge[ind_b]) == CG_FIRST; 
+			};
 
-		Scalar d = 0;
+		BidIter tmp = std::max_element(begin, end, pointToEdgeCmp);
+
 		BidIter ans1, ans2 = tmp;
-		for(size_t i = 0; i < 2; ++i)
-			if(make_max(d, distance(edge[i], *tmp)))
-				ans1 = begin + i;
+		ans1 = distance2(*tmp, edge[0], *tmp, edge[1]) == CG_FIRST ? begin : std::next(begin);
 
 		range_circulator<BidIter> cl(begin, end, tmp);
 
 		for(auto it = range_circulator<BidIter>(begin, end, begin + 1); it.iter() != begin; ++it)
 		{
-			edge = segment_2t<Scalar>(*it, *(it + 1));
+			edge[0] = *it, edge[1] = *(it + 1);
 
-			while(maxDistanceEdgePoint(*cl, edge) < maxDistanceEdgePoint(*(cl + 1), edge))
+			while(pointToEdgeCmp(*(cl + 1), *cl))
 				++cl;
-
-			for(size_t i = 0; i < 2; ++i)
+			size_t ind = maxDistanceEdgePoint(*cl, edge) == CG_FIRST ? 0 : 1;
+			if(distance2(*cl, edge[ind], *ans1, *ans2) == CG_FIRST)
 			{
-				if(make_max(d, distance(edge[i], *cl)))
-				{
-					ans1 = (it + i).iter();
-					ans2 = cl.iter();
-				}
+				ans1 = (it + ind).iter();
+				ans2 = cl.iter();
 			}
 		}
 
