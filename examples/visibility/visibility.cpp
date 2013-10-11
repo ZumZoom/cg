@@ -28,12 +28,6 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
 
    void draw(cg::visualization::drawer_type & drawer) const override
    {
-      drawer.set_color(Qt::white);
-      
-      for(size_t i = 0; i < contours.size(); ++i)
-         for(size_t l = 0, lp = contours[i].size() - 1; l != contours[i].size(); lp = l++)
-            drawer.draw_line(contours[i][lp], contours[i][l]);
-
       drawer.set_color(Qt::green);
 
       for(size_t i = 0; i < ans.size(); ++i)
@@ -43,9 +37,16 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
          drawer.draw_point(ans[i][1], 5);
       }
 
-      drawer.draw_point(f, 10);
-      drawer.draw_point(s, 10);
+      drawer.set_color(Qt::blue);
+      drawer.draw_point(f, 15);
+      drawer.draw_point(s, 15);
 
+
+      drawer.set_color(Qt::white);
+      for(size_t i = 0; i < contours.size(); ++i)
+         for(size_t l = 0, lp = contours[i].size() - 1; l != contours[i].size(); lp = l++)
+            drawer.draw_line(contours[i][lp], contours[i][l]);
+         
       if(modification_mode_)
       {
          drawer.set_color(Qt::red);
