@@ -17,6 +17,7 @@ namespace cg
    template <class Scalar>
    struct contour_2t
    {
+      contour_2t() {}
       contour_2t(std::vector<point_2t<Scalar> > const& pts) : pts_(pts)
       {}
 
@@ -65,6 +66,16 @@ namespace cg
       point_2t<Scalar> & operator [] (size_t idx)
       {
          return pts_[idx];
+      }
+
+      point_2t<Scalar> front() const
+      {
+         return pts_.front();
+      }
+
+      point_2t<Scalar> back() const
+      {
+         return pts_.back();
       }
 
    private:
