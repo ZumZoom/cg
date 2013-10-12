@@ -10,6 +10,7 @@
 
 #include <cg/primitives/point.h>
 #include <cg/visibility/visibility_naive.h>
+#include <cg/visibility/visibility_shortest_path.h>
 
 #include <vector>
 
@@ -53,6 +54,10 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
          for(size_t l = 0, lp = contours[current_polygon_].size() - 1; l != contours[current_polygon_].size(); lp = l++)
             drawer.draw_line(contours[current_polygon_][lp], contours[current_polygon_][l]);
       }
+
+      drawer.set_color(Qt::blue);
+      for(int i = 0; i < (int)path.size() - 1; ++i)
+         drawer.draw_line(path[i], path[i + 1]);
    }
 
    void print(cg::visualization::printer_type & p) const override
@@ -67,6 +72,15 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
                         << cg::visualization::endl
                         << "To switch mode press i"
                         << cg::visualization::endl;
+   }
+
+   bool on_double_click(const point_2f & p)
+   {
+      contours.clear();
+      ans.clear();
+      path.clear();
+      modification_mode_ = false;
+      return true;
    }
 
    bool on_press(const point_2f & p) override
@@ -99,6 +113,7 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
       {
          contours[current_polygon_].add_point(p);
          ans = make_visibility_graph(s, f, contours);
+         path = shortest_path(s, f, ans);
          return true;
       }
       else
@@ -109,6 +124,7 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
          modification_mode_ = true;
          current_polygon_ = contours.size() - 1;
          ans = make_visibility_graph(s, f, contours);
+         path = shortest_path(s, f, ans);
          return true;
       }
 
@@ -132,6 +148,7 @@ struct contour_contains_point_viewer : cg::visualization::viewer_adapter
       else
          contours[current_polygon_][*idx_] = p;
       ans = make_visibility_graph(s, f, contours);
+      path = shortest_path(s, f, ans);
       return true;
    }
 
@@ -172,6 +189,7 @@ private:
    int current_polygon_;
    boost::optional<cg::point_2> current_point_;
    std::vector< cg::segment_2 > ans;
+   std::vector< cg::point_2 > path;
    bool modification_mode_;
    cg::point_2 s, f;
 };

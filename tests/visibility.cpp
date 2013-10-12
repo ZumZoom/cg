@@ -2,6 +2,8 @@
 #include <cg/primitives/contour.h>
 #include <cg/primitives/point.h>
 #include <cg/visibility/visibility_naive.h>
+#include <cg/visibility/visibility_shortest_path.h>
+
 #include <vector>
 #include <boost/assign/list_of.hpp>
 
@@ -27,6 +29,11 @@ TEST(visibility, sample)
     cout << "size: " << ans.size() << endl;
     for(auto seg : ans)
     	cout << seg << endl;
+
+    auto path = cg::shortest_path(start, finish, ans);
+    cout << "path size: " << path.size() << endl;
+    for(auto pt : path)
+    	cout << pt << endl;
 
 	EXPECT_FALSE(false);
 }
@@ -62,6 +69,11 @@ TEST(visibility, hard)
 	for (segment_2 seg : ans)
 		cout << seg << endl;
 
+	auto path = cg::shortest_path(start, finish, ans);
+    cout << "path size: " << path.size() << endl;
+    for(auto pt : path)
+    	cout << pt << endl;
+
 	EXPECT_FALSE(false);
 }
 
@@ -83,6 +95,11 @@ TEST(visibility, unbelievable)
 	for (segment_2 seg : ans)
 		cout << seg << endl;
 
+	auto path = cg::shortest_path(start, finish, ans);
+    cout << "path size: " << path.size() << endl;
+    for(auto pt : path)
+    	cout << pt << endl;
+
 	EXPECT_FALSE(false);
 }
 
@@ -96,6 +113,10 @@ TEST(visibility, gangsta)
 	for (segment_2 seg : ans)
 		cout << seg << endl;
 	
+	auto path = cg::shortest_path(start, finish, ans);
+    cout << "path size: " << path.size() << endl;
+    for(auto pt : path)
+    	cout << pt << endl;
 
 	EXPECT_FALSE(false);	
 }

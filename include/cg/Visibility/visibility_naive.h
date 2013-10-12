@@ -37,12 +37,16 @@ namespace cg
 				if(*cont_it == pt)
 					continue;
 
+				point_2t<T> prev = (cont_it == g_it->begin() ? g_it->back() : *(cont_it - 1));
+				point_2t<T> next = (cont_it == (g_it->end() - 1) ? g_it->front() : *(cont_it + 1));
+
+				if(orientation(prev, *cont_it, pt) == CG_RIGHT && orientation(*cont_it, next, pt) == CG_RIGHT)
+					continue;
+
 				bool intersects = has_intersection(*cont_it, pt, g);
 
 				if(g_it == g2_it)
 				{
-					point_2t<T> prev = (cont_it == g_it->begin() ? g_it->back() : *(cont_it - 1));
-					point_2t<T> next = (cont_it == (g_it->end() - 1) ? g_it->front() : *(cont_it + 1));
 					if(orientation(prev, *cont_it, next) == CG_LEFT)
 					{	
 						if(orientation(prev, *cont_it, pt) == CG_LEFT && orientation(*cont_it, next, pt) == CG_LEFT)
@@ -69,7 +73,18 @@ namespace cg
 		{
 			for(auto cont1_it = g1_it->begin(), cont1_end = g1_it->end(); cont1_it != cont1_end; ++cont1_it)
 			{
+				size_t last = out.size();
 				get_all_visible(*cont1_it, g1_it, g, std::back_inserter(out));
+
+				point_2t<T> prev = (cont1_it == g1_it->begin() ? g1_it->back() : *(cont1_it - 1));
+				point_2t<T> next = (cont1_it == (g1_it->end() - 1) ? g1_it->front() : *(cont1_it + 1));
+
+				for(; last < out.size(); ++last)
+					if(orientation(prev, *cont1_it, out[last][0]) == CG_RIGHT && orientation(*cont1_it, next, out[last][0]) == CG_RIGHT)
+					{
+						out.erase(out.begin() + last);
+						--last;
+					}
 			}
 		}
 
