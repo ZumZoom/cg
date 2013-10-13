@@ -78,6 +78,11 @@ namespace cg
          return pts_.back();
       }
 
+      void clear()
+      {
+         pts_.clear();
+      }
+
    private:
       friend struct contour_builder_type;
 

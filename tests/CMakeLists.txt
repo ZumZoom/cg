@@ -20,6 +20,7 @@ set(SOURCES
    dynamic_convex_hull.cpp
    convex.cpp
    visibility.cpp
+   minkowski.cpp
 )
 
 add_executable(cg-test ${SOURCES})
