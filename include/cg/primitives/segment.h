@@ -18,6 +18,9 @@ namespace cg
       segment_2t(point_2t<Scalar> const & beg, point_2t<Scalar> const & end)
          : pts_( {{beg, end}} ) {}
 
+      segment_2t(const segment_2t<Scalar> & s)
+          : pts_( {{s[0], s[1]}} ) {}
+
       point_2t<Scalar> &         operator [] (size_t id)       { return pts_[id]; }
       point_2t<Scalar> const &   operator [] (size_t id) const { return pts_[id]; }
 
