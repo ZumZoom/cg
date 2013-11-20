@@ -18,6 +18,7 @@ using cg::triangle_2;
 struct delaunay_viewer : cg::visualization::viewer_adapter
 {
    delaunay_viewer()
+       : res(tr.get_triangulation())
    {}
 
    void draw(cg::visualization::drawer_type & drawer) const
@@ -38,6 +39,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
 
    bool on_release(const point_2f & p)
    {
+      tr.add_vertex(p);
       res = tr.get_triangulation();
       return true;
    }
