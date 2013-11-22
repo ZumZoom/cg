@@ -1,35 +1,29 @@
 ﻿#pragma once
 
-#include <boost/array.hpp>
 #include <vector>
 #include <cg/primitives/point.h>
 #include <cg/primitives/triangle.h>
-#include <cg/operations/contains/segment_point.h>
-#include <cg/io/point.h>
+#include <cg/operations/orientation.h>
 
 namespace cg
 {
-    template <class Scalar>
-    struct face_2t;
-    template <class Scalar>
-    struct edge_2t;
-    template <class Scalar>
-    struct vertex_2t;
+    template <class Scalar> struct face_2t;
+    template <class Scalar> struct edge_2t;
+    template <class Scalar> struct vertex_2t;
 
     template <class Scalar>
-    using vertex_handle = std::shared_ptr<vertex_2t <Scalar> >;
+    using vertex_handle = std::shared_ptr < vertex_2t <Scalar> >;
     template <class Scalar>
-    using face_handle = std::shared_ptr<face_2t <Scalar> >;
+    using face_handle = std::shared_ptr < face_2t <Scalar> >;
     template <class Scalar>
-    using edge_handle = std::shared_ptr<edge_2t <Scalar> >;
+    using edge_handle = std::shared_ptr < edge_2t <Scalar> >;
 
     template<class Scalar>
-    bool contains(boost::array<vertex_handle<Scalar>, 3 > t, point_2t<Scalar> const & q)
+    bool contains(std::vector< vertex_handle <Scalar> > t, point_2t <Scalar> const & q)
     {
        for (size_t l = 0, lp = 2; l != 3; lp = l++)
            if (!t[lp]->inf() && !t[l]->inf() && orientation(*t[lp], *t[l], q) == CG_RIGHT)
               return false;
-
        return true;
     }
 
@@ -57,16 +51,8 @@ namespace cg
     {
         vertex_2t(bool inf = false) : _inf(inf) {}
 
-        vertex_2t(const Scalar & p1, const Scalar & p2, bool inf = false)
-            : point_2t<Scalar>(p1, p2), _inf(inf)
-        {}
-
         vertex_2t(const point_2t<Scalar> & p, bool inf = false)
             : point_2t<Scalar>(p), _inf(inf)
-        {}
-
-        vertex_2t(const point_2t<Scalar> & p, const edge_handle<Scalar> & e, bool inf = false)
-            : point_2t<Scalar>(p), _e(e), _inf(inf)
         {}
 
         void set_edge(const edge_handle<Scalar> & e)
@@ -96,15 +82,6 @@ namespace cg
 
         face_2t(const edge_handle<Scalar> & e) : _e(e) {}
 
-        face_handle<Scalar> neighbour(size_t index) const
-        {
-            edge_handle<Scalar> e = _e;
-            for(size_t i = 0; i < index; ++i)
-                e = e->next();
-            e = e->twin();
-            return e->face();
-        }
-
         vertex_handle<Scalar> vertex(size_t index) const
         {
             return edge(index)->vertex();
@@ -120,10 +97,7 @@ namespace cg
 
         bool inf() const
         {
-            for(size_t i = 0; i < 3; ++i)
-                if(vertex(i)->inf())
-                    return true;
-            return false;
+            return vertex(0)->inf() || vertex(1)->inf() || vertex(2)->inf();
         }
 
         void set_edge(const edge_handle<Scalar> & e)
@@ -138,13 +112,6 @@ namespace cg
     template <class Scalar>
     struct edge_2t
     {
-        edge_2t() {}
-
-        edge_2t(const face_handle<Scalar> & f, const vertex_handle<Scalar> & v,
-                const edge_handle<Scalar> & next, const edge_handle<Scalar> & twin)
-            : _f(f), _twin(twin), _v(v), _next(next)
-        {}
-
         vertex_handle<Scalar> vertex() const
         {
             return _v;
@@ -197,27 +164,6 @@ namespace cg
     };
 
     template <class Scalar>
-    std::ostream & operator<<(std::ostream & os, const face_handle<Scalar> & face)
-    {
-        os << "(" << *face->vertex(0) << ", " << *face->vertex(1) << ", " << *face->vertex(2) << ")";
-        return os;
-    }
-
-    template <class Scalar>
-    std::ostream & operator<<(std::ostream & os, const edge_handle<Scalar> & edge)
-    {
-        os << "(" << *edge->vertex() << ", " << *edge->next()->vertex() << ")";
-        return os;
-    }
-
-    template <class Scalar>
-    std::ostream & operator<<(std::ostream & os, const vertex_handle<Scalar> & vertex)
-    {
-        os << "(" << *vertex << ")";
-        return os;
-    }
-
-    template <class Scalar>
     struct delaunay_triangulation_2t
     {
         delaunay_triangulation_2t()
@@ -239,21 +185,12 @@ namespace cg
             std::vector < triangle_2t <Scalar> > res;
             for(auto face : _fcs)
             {
-                std::cout << "Face: "
-                          << *face->vertex(0) << " "
-                          << *face->vertex(1) << " "
-                          << *face->vertex(2) << std::endl;
-
                 if(face->inf())
                     continue;
-
-                res.push_back(triangle_2t<Scalar>(
-                                  *face->vertex(0),
-                                  *face->vertex(1),
-                                  *face->vertex(2)));
-
+                res.push_back(triangle_2t<Scalar>(*face->vertex(0),
+                                                  *face->vertex(1),
+                                                  *face->vertex(2)));
             }
-
             return res;
         }
 
@@ -271,7 +208,6 @@ namespace cg
                     _edgs.push_back(edge_handle<Scalar>(new edge_2t <Scalar>()));
                 for(size_t i = 0; i < 2; ++i)
                     _fcs.push_back(face_handle<Scalar>(new face_2t <Scalar>(_edgs[i * 3])));
-
                 for(size_t i = 0; i < 6; ++i)
                 {
                     _edgs[i]->set_twin(_edgs[(i + 3) % 6]);
@@ -284,22 +220,17 @@ namespace cg
                     _edgs[i]->set_next(_edgs[(i + 1) % 3]);
                     _edgs[i + 3]->set_next(_edgs[3 + (i + 2) % 3]);
                 }
-
                 for(size_t i = 0; i < 3; ++i)
                     _vtxs[i]->set_edge(_edgs[i]);
-
                 return;
             }
 
             for(typename std::vector<face_handle <Scalar> >::iterator it = _fcs.begin(); it != _fcs.end(); ++it)
             {
                 face_handle<Scalar> face = *it;
-
                 if(contains<Scalar>({{face->vertex(0), face->vertex(1), face->vertex(2)}}, v))
                 {
                     std::iter_swap(it, _fcs.rbegin());
-                    std::cout << "Adding " << v << " on " << face << std::endl;
-
                     add_vertex_on_face(v, face);
                     edge_handle <Scalar> edge = _vtxs.back()->edge();
                     for(size_t i = 0; i < 3; ++i)
@@ -339,7 +270,6 @@ namespace cg
             {
                 face->edge(i)->set_next(_edgs[_edgs_sz + (i + 1) % 3]);
             }
-
             for(size_t i = 0; i < 3; ++i)
             {
                 _fcs[_fcs.size() - 1 - i]->set_edge(_edgs[_edgs.size() - 1 - i]);
@@ -354,20 +284,8 @@ namespace cg
             vertex_handle<Scalar> v0 = e0->vertex(), v1 = e1->vertex(), v2 = e2->vertex();
             vertex_handle<Scalar> v = e0->twin()->prev()->vertex();
 
-            std::cout << "Checking " << e0->face() << ":" << std::endl;
-
-            if(contains(v0, v1, v2, v))
+            if(contains(v0, v1, v2, v) || contains(v1, v0, v, v2))
             {
-                std::cout << "(" << v0 << " " << v1 << " " << v2 << ")" << " contains " << v << std::endl;
-                std::cout << "Fixing " << e0 << std::endl;
-                flip(e0);
-                fix_correctness(e0->next());
-                fix_correctness(e0->twin()->prev());
-            }
-            else if(contains(v1, v0, v, v2))
-            {
-                std::cout << "(" << v0 << " " << v1 << " " << v << ")" << " contains " << v2 << std::endl;
-                std::cout << "Fixing " << e0 << std::endl;
                 flip(e0);
                 fix_correctness(e0->next());
                 fix_correctness(e0->twin()->prev());
@@ -401,5 +319,4 @@ namespace cg
         std::vector < edge_handle <Scalar> > _edgs;
         std::vector < face_handle <Scalar> > _fcs;
     };
-
 }
