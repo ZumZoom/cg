@@ -6,7 +6,7 @@
 #include <cg/visualization/viewer_adapter.h>
 #include <cg/visualization/draw_util.h>
 
-#include <cg/primitives/cell.h>
+#include <cg/triangulation/delaunay_triangulation.h>
 #include <cg/io/triangle.h>
 
 
@@ -23,6 +23,10 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
 
    void draw(cg::visualization::drawer_type & drawer) const
    {
+      drawer.set_color(Qt::white);
+      for (point_2 p : pts)
+         drawer.draw_point(p, 2);
+
       drawer.set_color(Qt::green);
       for (triangle_2 t : res)
       {
@@ -41,12 +45,14 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
    {
       tr.add_vertex(p);
       res = tr.get_triangulation();
+      pts = tr.get_points();
       return true;
    }
 
 private:
-   cg::cell_2t<double> tr;
+   cg::delaunay_triangulation_2t<double> tr;
    std::vector<triangle_2> res;
+   std::vector<point_2> pts;
 };
 
 int main(int argc, char ** argv)
