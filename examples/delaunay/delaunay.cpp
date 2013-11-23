@@ -14,7 +14,7 @@ using cg::triangle_2;
 struct delaunay_viewer : cg::visualization::viewer_adapter
 {
    delaunay_viewer()
-       : mode(inserting), res(tr.get_triangulation())
+      : mode(inserting), res(tr.get_triangulation())
    {}
 
    void draw(cg::visualization::drawer_type & drawer) const
@@ -41,7 +41,7 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
 
       drawer.set_color(Qt::yellow);
       if(cur_pt)
-          drawer.draw_point(*cur_pt, 10);
+         drawer.draw_point(*cur_pt, 10);
    }
 
    bool on_move(const point_2f& p)
@@ -80,19 +80,19 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
       switch(mode)
       {
       case inserting:
-          tr.add_vertex(p);
-          break;
+         tr.add_vertex(p);
+         break;
       case deleting:
-          if(set_cur_pt(p))
-          {
-             tr.del_vertex(*cur_pt);
-             cur_pt.reset();
-          }
-          else
-             return false;
-          break;
+         if(set_cur_pt(p))
+         {
+            tr.del_vertex(*cur_pt);
+            cur_pt.reset();
+         }
+         else
+            return false;
+         break;
       default:
-          return false;
+         return false;
       }
       res = tr.get_triangulation();
       pts = tr.get_points();
@@ -102,11 +102,11 @@ struct delaunay_viewer : cg::visualization::viewer_adapter
 
    void check_edges()
    {
-       failed.clear();
-       for(triangle_2 t : res)
-           for(point_2 s : pts)
-               if(t[0] != s && t[1] != s && t[2] != s && cg::contains_impl(t[0], t[1], t[2], s) > 0.0)
-                   failed.push_back(t);
+      failed.clear();
+      for(triangle_2 t : res)
+         for(point_2 s : pts)
+            if(t[0] != s && t[1] != s && t[2] != s && cg::contains(t[0], t[1], t[2], s))
+               failed.push_back(t);
    }
 
 private:
