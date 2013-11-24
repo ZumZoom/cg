@@ -3,7 +3,12 @@
 #include <vector>
 #include <cg/primitives/point.h>
 #include <cg/primitives/triangle.h>
+#include <cg/operations/contains/segment_point.h>
+#include <cg/operations/has_intersection/segment_segment.h>
 #include <cg/operations/orientation.h>
+#include <set>
+
+#include <cg/io/point.h>
 
 namespace cg
 {
@@ -224,6 +229,11 @@ struct edge_2t
       return _twin->next();
    }
 
+   bool constraint()
+   {
+      return _fixed;
+   }
+
    void set_twin(const edge_handle<Scalar> & twin)
    {
       _twin = twin;
@@ -252,10 +262,16 @@ struct edge_2t
       _v.reset();
    }
 
+   void set_constraint(bool fixed)
+   {
+      _fixed = fixed;
+   }
+
 private:
    vertex_handle<Scalar> _v;
    face_handle<Scalar> _f;
    edge_handle<Scalar> _twin, _next;
+   bool _fixed;
 };
 
 template <class Scalar>
@@ -329,8 +345,23 @@ struct delaunay_triangulation_2t
       return res;
    }
 
+   std::vector < segment_2t <Scalar> > get_constraints()
+   {
+      std::vector < segment_2t <Scalar> > res;
+      for(auto edge : _edgs)
+      {
+         if(edge->constraint())
+            res.push_back(segment_2t<Scalar>(*edge->vertex(), *edge->next()->vertex()));
+      }
+      return res;
+   }
+
    void add_vertex(const point_2t <Scalar> & v)
    {
+      for(typename std::vector < vertex_handle <Scalar> >::const_iterator it = _vtxs.begin(); it != _vtxs.end(); ++it)
+         if(**it == v)
+            return;
+
       if(_vtxs.size() == 1)
       {
          _vtxs.push_back(vertex_handle<Scalar>(new vertex_2t <Scalar>(v)));
@@ -380,22 +411,27 @@ struct delaunay_triangulation_2t
 
    void del_vertex(const point_2t<Scalar> & p)
    {
+      for(auto edge : _edgs)
+         if(edge->constraint() && *edge->vertex() == p)
+            return;
+
       if(_vtxs.size() <= 3)
       {
-         for(typename std::vector < vertex_handle <Scalar> >::const_iterator it = _vtxs.begin(); it != _vtxs.end();)
+         for(typename std::vector < vertex_handle <Scalar> >::const_iterator it = _vtxs.begin(); it != _vtxs.end(); ++it)
+         {
             if(**it == p)
             {
                (*it)->clear();
-               it = _vtxs.erase(it);
+               _vtxs.erase(it);
+               for(auto edge : _edgs)
+                  edge->clear();
+               for(auto face : _fcs)
+                  face->clear();
+               _edgs.clear();
+               _fcs.clear();
+               break;
             }
-            else
-               ++it;
-         for(auto edge : _edgs)
-            edge->clear();
-         for(auto face : _fcs)
-            face->clear();
-         _edgs.clear();
-         _fcs.clear();
+         }
          return;
       }
 
@@ -467,7 +503,123 @@ struct delaunay_triangulation_2t
       }
    }
 
+   void add_constraint(const point_2t <Scalar> & p1, const point_2t <Scalar> & p2)
+   {
+      vertex_handle<Scalar> vtx1, vtx2;
+      for(typename std::vector < vertex_handle <Scalar> >::const_iterator it = _vtxs.begin(); it != _vtxs.end(); ++it)
+      {
+         if(**it == p1)
+            vtx1 = *it;
+         if(**it == p2)
+            vtx2 = *it;
+      }
+      if(!vtx1)
+      {
+         add_vertex(p1);
+         vtx1 = _vtxs.back();
+      }
+      if(!vtx2)
+      {
+         add_vertex(p2);
+         vtx2 = _vtxs.back();
+      }
+
+      segment_2t<Scalar> new_segment(*vtx1, *vtx2);
+      for(auto vertex : _vtxs)
+         if(!vertex->inf() && vertex != vtx1 && vertex != vtx2 && contains(new_segment, *vertex))
+            return;
+      for(auto edge : _edgs)
+         if(edge->constraint() &&
+            edge->vertex() != vtx1 && edge->twin()->vertex() != vtx1 &&
+            edge->vertex() != vtx2 && edge->twin()->vertex() != vtx2 &&
+            has_intersection(new_segment, segment_2t<Scalar>(*edge->vertex(),*edge->next()->vertex())))
+            return;
+
+      std::set< edge_handle <Scalar> > to_check;
+
+      while(true)
+      {
+         edge_handle<Scalar> edge;
+         for(size_t i = 0;; ++i)
+         {
+            edge = vtx1->edge(i);
+            if(!edge->face()->inf() && has_intersection(new_segment, segment_2t<Scalar>(*edge->next()->vertex(), *edge->prev()->vertex())))
+               break;
+         }
+         if(edge->next()->vertex() == vtx2)
+         {
+            edge->twin()->set_constraint(true);
+            edge->set_constraint(true);
+            break;
+         }
+         if(edge->prev()->vertex() == vtx2)
+         {
+            edge = edge->prev();
+            edge->twin()->set_constraint(true);
+            edge->set_constraint(true);
+            break;
+         }
+
+         edge = edge->next();
+
+         while(edge->vertex() != vtx2)
+         {
+            if(can_flip(edge))
+            {
+               to_check.insert(edge);
+               flip(edge);
+               if(has_intersection(new_segment, segment_2t<Scalar>(*edge->next()->vertex(), *edge->prev()->vertex())))
+                  edge = edge->next();
+               else
+                  edge = edge->twin()->prev();
+            }
+            else
+            {
+               if(has_intersection(new_segment, segment_2t<Scalar>(*edge->vertex(), *edge->twin()->prev()->vertex())))
+                  edge = edge->twin()->next();
+               else
+                  edge = edge->twin()->prev();
+            }
+         }
+
+         std::swap(vtx1, vtx2);
+      }
+
+      for(auto edge : to_check)
+         fix_correctness(edge);
+   }
+
+   void del_constraint(const point_2t <Scalar> & p1, const point_2t <Scalar> & p2)
+   {
+      vertex_handle<Scalar> vtx1, vtx2;
+      for(typename std::vector < vertex_handle <Scalar> >::const_iterator it = _vtxs.begin(); it != _vtxs.end(); ++it)
+      {
+         if(**it == p1)
+            vtx1 = *it;
+         if(**it == p2)
+            vtx2 = *it;
+      }
+      if(!vtx1 || !vtx2)
+         return;
+
+      edge_handle<Scalar> edge = vtx1->edge(), edge_begin = vtx1->edge();
+      while(edge->next()->vertex() != vtx2 && edge->neighbour() != edge_begin)
+         edge = edge->neighbour();
+
+      edge->twin()->set_constraint(false);
+      edge->set_constraint(false);
+
+      fix_correctness(edge);
+   }
+
 protected:
+   bool can_flip(const edge_handle<Scalar> & edge)
+   {
+      vertex_handle<Scalar> v0 = edge->vertex(), v1 = edge->next()->vertex(),
+            v2 = edge->prev()->vertex(), v3 = edge->twin()->prev()->vertex();
+      return orientation(*v2, *v3, *v0) != orientation(*v2, *v3, *v1);
+   }
+
    /* face should be last in _fcs */
    void add_vertex_on_face(const point_2t <Scalar> & v, const face_handle <Scalar> & face)
    {
@@ -504,13 +656,14 @@ protected:
 
    void fix_correctness(const edge_handle <Scalar> & e0)
    {
-      edge_handle <Scalar> e1 = e0->next(), e2 = e1->next();
+      edge_handle<Scalar> e1 = e0->next(), e2 = e1->next();
       vertex_handle<Scalar> v0 = e0->vertex(), v1 = e1->vertex(), v2 = e2->vertex();
       vertex_handle<Scalar> v = e0->twin()->prev()->vertex();
 
       if(contains(v0, v1, v2, v) || contains(v1, v0, v, v2))
       {
-         flip(e0);
+         if(!e0->constraint())
+            flip(e0);
          fix_correctness(e0->next());
          fix_correctness(e0->prev());
          fix_correctness(e0->twin()->next());
