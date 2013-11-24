@@ -656,14 +656,15 @@ protected:
 
    void fix_correctness(const edge_handle <Scalar> & e0)
    {
+      if(e0->constraint())
+         return;
       edge_handle<Scalar> e1 = e0->next(), e2 = e1->next();
       vertex_handle<Scalar> v0 = e0->vertex(), v1 = e1->vertex(), v2 = e2->vertex();
       vertex_handle<Scalar> v = e0->twin()->prev()->vertex();
 
       if(contains(v0, v1, v2, v) || contains(v1, v0, v, v2))
       {
-         if(!e0->constraint())
-            flip(e0);
+         flip(e0);
          fix_correctness(e0->next());
          fix_correctness(e0->prev());
          fix_correctness(e0->twin()->next());
