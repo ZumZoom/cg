@@ -31,7 +31,25 @@ TEST(minkowski, test1)
    cout << "Size: " << ans.size() << endl;
    for(auto pt : ans)
       cout << pt << endl;
+}
 
+TEST(minkowski, test2)
+{
+   std::vector<cg::point_2> pts;
+   pts.push_back(cg::point_2(0, 0));
+   pts.push_back(cg::point_2(4, 0));
+   pts.push_back(cg::point_2(4, 4));
+   pts.push_back(cg::point_2(0, 4));
 
-   EXPECT_TRUE(1);
+   std::vector<cg::point_2> pts2;
+   pts2.push_back(cg::point_2(-2, -2));
+   pts2.push_back(cg::point_2(2, -2));
+   pts2.push_back(cg::point_2(2, 2));
+   pts2.push_back(cg::point_2(-2, 2));
+
+   auto ans = cg::minkowski_sum(cg::contour_2(pts2), cg::contour_2(pts));
+
+   cout << "Size: " << ans.size() << endl;
+   for(auto pt : ans)
+      cout << pt << endl;
 }
