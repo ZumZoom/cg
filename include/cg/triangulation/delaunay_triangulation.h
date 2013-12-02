@@ -23,6 +23,13 @@ using face_handle = std::shared_ptr < face_2t <Scalar> >;
 template <class Scalar>
 using edge_handle = std::shared_ptr < edge_2t <Scalar> >;
 
+template <class Scalar>
+using vertex_weak_handle = std::weak_ptr < vertex_2t <Scalar> >;
+template <class Scalar>
+using face_weak_handle = std::weak_ptr < face_2t <Scalar> >;
+template <class Scalar>
+using edge_weak_handle = std::weak_ptr < edge_2t <Scalar> >;
+
 template<class Scalar>
 bool contains(const std::vector< vertex_handle <Scalar> > & t, point_2t <Scalar> const & q)
 {
@@ -51,7 +58,7 @@ bool contains_r(const point_2 & a, const point_2 & b, const point_2 & c, const p
       return false;
 }
 
-bool contains_d(const point_2 & a, const point_2 & b, const point_2 & c, const point_2 & d)
+bool contains(const point_2 & a, const point_2 & b, const point_2 & c, const point_2 & d)
 {
    typedef boost::numeric::interval_lib::unprotect<boost::numeric::interval<double> >::type interval;
    boost::numeric::interval<double>::traits_type::rounding _;
@@ -75,28 +82,6 @@ bool contains_d(const point_2 & a, const point_2 & b, const point_2 & c, const p
       return false;
 
    return contains_r(a, b, c, d);
-}
-
-bool contains(const point_2 & a, const point_2 & b, const point_2 & c, const point_2 & d)
-{
-   double a11 = a.x - d.x, a12 = a.y - d.y, a13 = (a.x * a.x - d.x * d.x) + (a.y * a.y - d.y * d.y),
-          a21 = b.x - d.x, a22 = b.y - d.y, a23 = (b.x * b.x - d.x * d.x) + (b.y * b.y - d.y * d.y),
-          a31 = c.x - d.x, a32 = c.y - d.y, a33 = (c.x * c.x - d.x * d.x) + (c.y * c.y - d.y * d.y);
-   double res1 = a11 * a22 * a33, res2 = - a11 * a23 * a32, res3 = - a12 * a21 * a33,
-          res4 = a12 * a23 * a31, res5 = a13 * a21 * a32, res6 = - a13 * a22 * a31;
-
-   double res = res1 + res2 + res3 + res4 + res5 + res6;
-
-   double eps = (fabs(res1) + fabs(res2) + fabs(res3) + fabs(res4) + fabs(res5) + fabs(res6)) *
-                16 * std::numeric_limits<double>::epsilon();
-
-   if (res > eps)
-      return true;
-
-   if (res < -eps)
-      return false;
-
-   return contains_d(a, b, c, d);
 }
 
 template<class Scalar>
@@ -141,7 +126,7 @@ struct vertex_2t : public point_2t<Scalar>
 
    edge_handle<Scalar> edge(size_t ind = 0) const
    {
-      edge_handle<Scalar> edge = _e;
+      edge_handle<Scalar> edge = _e.lock();
       for(size_t i = 0; i < ind; ++i)
          edge = edge->neighbour();
       return edge;
@@ -153,7 +138,7 @@ struct vertex_2t : public point_2t<Scalar>
    }
 
 private:
-   edge_handle<Scalar> _e;
+   edge_weak_handle<Scalar> _e;
    bool _inf;
 };
 
@@ -171,7 +156,7 @@ struct face_2t
 
    edge_handle<Scalar> edge(size_t index = 0) const
    {
-      edge_handle<Scalar> e = _e;
+      edge_handle<Scalar> e = _e.lock();
       for(size_t i = 0; i < index; ++i)
          e = e->next();
       return e;
@@ -187,13 +172,8 @@ struct face_2t
       _e = e;
    }
 
-   void clear()
-   {
-      _e.reset();
-   }
-
 private:
-   edge_handle<Scalar> _e;
+   edge_weak_handle<Scalar> _e;
 };
 
 template <class Scalar>
@@ -201,32 +181,32 @@ struct edge_2t
 {
    vertex_handle<Scalar> vertex() const
    {
-      return _v;
+      return _v.lock();
    }
 
    face_handle<Scalar> face() const
    {
-      return _f;
+      return _f.lock();
    }
 
    edge_handle<Scalar> twin() const
    {
-      return _twin;
+      return _twin.lock();
    }
 
    edge_handle<Scalar> next() const
    {
-      return _next;
+      return _next.lock();
    }
 
    edge_handle<Scalar> prev() const
    {
-      return _next->next();
+      return _next.lock()->next();
    }
 
    edge_handle<Scalar> neighbour() const
    {
-      return _twin->next();
+      return _twin.lock()->next();
    }
 
    bool constraint()
@@ -254,23 +234,15 @@ struct edge_2t
       _v = v;
    }
 
-   void clear()
-   {
-      _twin.reset();
-      _next.reset();
-      _f.reset();
-      _v.reset();
-   }
-
    void set_constraint(bool fixed)
    {
       _fixed = fixed;
    }
 
 private:
-   vertex_handle<Scalar> _v;
-   face_handle<Scalar> _f;
-   edge_handle<Scalar> _twin, _next;
+   vertex_weak_handle<Scalar> _v;
+   face_weak_handle<Scalar> _f;
+   edge_weak_handle<Scalar> _twin, _next;
    bool _fixed;
 };
 
@@ -310,16 +282,6 @@ struct delaunay_triangulation_2t
    delaunay_triangulation_2t()
    {
       _vtxs.push_back(std::shared_ptr <vertex_2t <Scalar> >(new vertex_2t <Scalar>(true)));
-   }
-
-   ~delaunay_triangulation_2t()
-   {
-      for(auto vtx : _vtxs)
-         vtx->clear();
-      for(auto edge : _edgs)
-         edge->clear();
-      for(auto face : _fcs)
-         face->clear();
    }
 
    std::vector < point_2t < Scalar > > get_points()
@@ -421,12 +383,7 @@ struct delaunay_triangulation_2t
          {
             if(**it == p)
             {
-               (*it)->clear();
                _vtxs.erase(it);
-               for(auto edge : _edgs)
-                  edge->clear();
-               for(auto face : _fcs)
-                  face->clear();
                _edgs.clear();
                _fcs.clear();
                break;
@@ -467,7 +424,6 @@ struct delaunay_triangulation_2t
                vtx->edge(i)->next()->vertex()->set_edge(vtx->edge(i)->next());
                if(vtx->edge(i)->face() != face)
                {
-                  vtx->edge(i)->face()->clear();
                   auto iter = std::find(_fcs.begin(), _fcs.end(), vtx->edge(i)->face());
                   _fcs.erase(iter);
                }
@@ -483,11 +439,8 @@ struct delaunay_triangulation_2t
                edgs[2 * i + 1] = vtx->edge(i)->twin();
             }
 
-            vtx->clear();
-
             for(size_t i = 0; i < 6; ++i)
             {
-               edgs[i]->clear();
                auto iter = std::find(_edgs.begin(), _edgs.end(), edgs[i]);
                _edgs.erase(iter);
             }
