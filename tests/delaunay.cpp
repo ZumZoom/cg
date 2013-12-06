@@ -22,24 +22,19 @@ bool is_delaunay_triang(const vector<triangle_2> & faces, const vector<point_2> 
 
 TEST(delaunay, uniform)
 {
-   for(size_t i = 0; i < 10; ++i)
+   for(size_t i = 0; i < 50; ++i)
    {
-      vector<point_2> pts = uniform_points(70);
+      vector<point_2> pts = uniform_points(100);
       delaunay_triangulation_2t<double> tr;
       for(auto pt : pts)
-      {
          tr.add_vertex(pt);
-         vector<triangle_2> faces = tr.get_triangulation();
-         vector<point_2> points = tr.get_points();
-         EXPECT_TRUE(is_delaunay_triang(faces, points));
-      }
+
+      vector<triangle_2> faces = tr.get_triangulation();
+      vector<point_2> points = tr.get_points();
+      EXPECT_TRUE(is_delaunay_triang(faces, points));
+
       for(auto pt : pts)
-      {
          tr.del_vertex(pt);
-         vector<triangle_2> faces = tr.get_triangulation();
-         vector<point_2> points = tr.get_points();
-         EXPECT_TRUE(is_delaunay_triang(faces, points));
-      }
    }
 }
 
@@ -57,137 +52,77 @@ TEST(delaunay, circle)
       double x = cos(angle) * r;
       double y = sin(angle) * r;
       tr.add_vertex({x, y});
-      if(i % 60 == 0)
-      {
-         vector<triangle_2> faces = tr.get_triangulation();
-         vector<point_2> points = tr.get_points();
-         EXPECT_TRUE(is_delaunay_triang(faces, points));
-      }
    }
+
+   vector<triangle_2> faces = tr.get_triangulation();
+   vector<point_2> points = tr.get_points();
+   EXPECT_TRUE(is_delaunay_triang(faces, points));
 
    srand(time(0));
 
-   vector<point_2> points = tr.get_points();
    std::random_shuffle(points.begin(), points.end());
 
    for(size_t i = 0; i != n; ++i)
-   {
       tr.del_vertex(points[i]);
-      if(i % 60 == 0)
-      {
-         vector<triangle_2> faces = tr.get_triangulation();
-         vector<point_2> points = tr.get_points();
-         EXPECT_TRUE(is_delaunay_triang(faces, points));
-      }
-   }
 }
 
 TEST(delaunay, ordered_horisontal_line)
 {
-   const size_t n = 100;
+   const size_t n = 1000;
    delaunay_triangulation_2t<double> tr;
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.add_vertex({0, i});
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    vector<point_2> points = tr.get_points();
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.del_vertex(points[i]);
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.add_vertex({0, -i});
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    points = tr.get_points();
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.del_vertex(points[i]);
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 }
 
 TEST(delaunay, ordered_vertical_line)
 {
-   const size_t n = 100;
+   const size_t n = 1000;
    delaunay_triangulation_2t<double> tr;
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.add_vertex({i, 0});
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    vector<point_2> points = tr.get_points();
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.del_vertex(points[i]);
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.add_vertex({-i, 0});
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    points = tr.get_points();
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.del_vertex(points[i]);
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 }
 
 TEST(delaunay, random_vertical_line)
 {
-   const size_t n = 100;
+   const size_t n = 1000;
    delaunay_triangulation_2t<double> tr;
 
    srand(time(0));
 
    for(size_t i = 0; i < n; ++i)
-   {
       tr.add_vertex({rand(), 0});
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 
    vector<point_2> pts = tr.get_points();
 
    for(auto pt : pts)
-   {
       tr.del_vertex(pt);
-      vector<triangle_2> faces = tr.get_triangulation();
-      vector<point_2> points = tr.get_points();
-      EXPECT_TRUE(is_delaunay_triang(faces, points));
-   }
 }
+
