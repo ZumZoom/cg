@@ -1,14 +1,12 @@
 ﻿#pragma once
 
 #include <vector>
+#include <set>
 #include <cg/primitives/point.h>
 #include <cg/primitives/triangle.h>
 #include <cg/operations/contains/segment_point.h>
 #include <cg/operations/has_intersection/segment_segment.h>
 #include <cg/operations/orientation.h>
-#include <set>
-
-#include <cg/io/point.h>
 
 namespace cg
 {
@@ -254,27 +252,6 @@ private:
 };
 
 template <class Scalar>
-std::ostream & operator<<(std::ostream & os, const face_handle<Scalar> & face)
-{
-   os << "(" << face->vertex(0) << ", " << face->vertex(1) << ", " << face->vertex(2);
-   return os;
-}
-
-template <class Scalar>
-std::ostream & operator<<(std::ostream & os, const edge_handle<Scalar> & edge)
-{
-   os << "(" << *edge->vertex() << ", " << *edge->next()->vertex() << ")";
-   return os;
-}
-
-template <class Scalar>
-std::ostream & operator<<(std::ostream & os, const vertex_handle<Scalar> & vertex)
-{
-   os << "(" << *vertex << ")";
-   return os;
-}
-
-template <class Scalar>
 struct delaunay_triangulation_2t
 {
    delaunay_triangulation_2t()
@@ -294,19 +271,11 @@ struct delaunay_triangulation_2t
    std::vector < triangle_2t <Scalar> > get_triangulation()
    {
       std::vector < triangle_2t <Scalar> > res;
-//      std::cout << "triang" << std::endl;
       for(auto face : _fcs)
-      {
-//         std::cout << face << std::endl;
-         if(face->inf())
-            continue;
-         res.push_back(triangle_2t<Scalar>(*face->vertex(0),
-                                           *face->vertex(1),
-                                           *face->vertex(2)));
-      }
-
-//      std::cout << std::endl;
-
+         if(!face->inf())
+            res.push_back(triangle_2t<Scalar>(*face->vertex(0),
+                                              *face->vertex(1),
+                                              *face->vertex(2)));
       return res;
    }
 
@@ -362,7 +331,6 @@ struct delaunay_triangulation_2t
          face = *it;
          if(contains<Scalar>({{face->vertex(0), face->vertex(1), face->vertex(2)}}, v))
          {
-//            std::cout << "adding on " << face << std::endl;
             std::iter_swap(it, _fcs.rbegin());
             add_vertex_on_face(v, face);
             edge_handle <Scalar> edge = _vtxs.back()->edge();
@@ -375,7 +343,6 @@ struct delaunay_triangulation_2t
          }
       }
       face = get_face_on_collinear(v);
-      assert( face.use_count() );
 
       add_vertex_on_face(v, face);
       edge_handle <Scalar> edge0 = _vtxs.back()->edge();
@@ -384,8 +351,6 @@ struct delaunay_triangulation_2t
       edge_handle <Scalar> edge1 = edge0->neighbour();
       if(edge1->face()->inf())
          edge1 = edge1->neighbour();
-
-//      std::cout << "choose to fix" << edge0 << " " << edge1 << std::endl;
 
       if((*edge0->next()->vertex() > *edge1->next()->vertex() && *edge1->next()->vertex() > v) ||
          (*edge0->next()->vertex() < *edge1->next()->vertex() && *edge1->next()->vertex() < v))
@@ -429,8 +394,6 @@ struct delaunay_triangulation_2t
          auto vtx = *it;
          if(*vtx == p && !vtx->inf())
          {
-//            std::cout << "deleting " << vtx << std::endl;
-
             std::vector< edge_handle <Scalar> > flipped;
             edge_handle<Scalar> edge = vtx->edge();
             size_t count = 1;
@@ -446,7 +409,6 @@ struct delaunay_triangulation_2t
                edge = edge->neighbour();
                if(!to_flip->inf())
                {
-//                  std::cout << "flipping " << to_flip << std::endl;
                   flip(to_flip);
                   flipped.push_back(to_flip);
                   --count;
@@ -466,7 +428,6 @@ struct delaunay_triangulation_2t
                   if(vtx->edge(i)->face() != face)
                   {
                      auto iter = std::find(_fcs.begin(), _fcs.end(), vtx->edge(i)->face());
-                     assert( iter != _fcs.end() );
                      _fcs.erase(iter);
                   }
                   vtx->edge(i)->next()->set_face(face);
@@ -481,14 +442,9 @@ struct delaunay_triangulation_2t
                   edgs[2 * i + 1] = vtx->edge(i)->twin();
                }
 
-//               for(size_t i = 0; i < 6; ++i)
-//                  std::cout << "deleting" << edgs[i] << std::endl;
-//               std::cout << std::endl;
-
                for(size_t i = 0; i < 6; ++i)
                {
                   auto iter = std::find(_edgs.begin(), _edgs.end(), edgs[i]);
-                  assert( iter != _edgs.end() );
                   _edgs.erase(iter);
                }
 
@@ -515,21 +471,16 @@ struct delaunay_triangulation_2t
                {
                   edgs[2 * i] = face1->edge(i);
                   edgs[2 * i + 1] = face2->edge(i);
-//                  std::cout << "to delete " << face1->edge(i) << std::endl;
-//                  std::cout << "to delete " << face2->edge(i) << std::endl;
                }
                for(size_t i = 0; i < 6; ++i)
                {
                   auto iter = std::find(_edgs.begin(), _edgs.end(), edgs[i]);
-                  assert( iter != _edgs.end() );
                   _edgs.erase(iter);
                }
 
                auto iter = std::find(_fcs.begin(), _fcs.end(), face1);
-               assert( iter != _fcs.end() );
                _fcs.erase(iter);
                iter = std::find(_fcs.begin(), _fcs.end(), face2);
-               assert( iter != _fcs.end() );
                _fcs.erase(iter);
             }
             return;
@@ -665,27 +616,18 @@ protected:
             continue;
          if(orientation(*edge->vertex(), *edge->next()->vertex(), v) == CG_COLLINEAR)
          {
-//            std::cout << "begin choosing collinear edge:\n" << edge << std::endl;
             while((*edge->vertex() < *edge->next()->vertex() && *edge->next()->vertex() < v) ||
                   (*edge->vertex() > *edge->next()->vertex() && *edge->next()->vertex() > v))
-            {
                edge = get_next_collinear(edge);
-//               std::cout << "better: " << edge << std::endl;
-            }
+
             edge = edge->twin();
 
             while((*edge->vertex() < *edge->next()->vertex() && *edge->next()->vertex() < v) ||
                   (*edge->vertex() > *edge->next()->vertex() && *edge->next()->vertex() > v))
-            {
                edge = get_next_collinear(edge);
-//               std::cout << "better: " << edge << std::endl;
-            }
-
-//            std::cout << "Got collinear closest " << edge << std::endl;
 
             typename std::vector<face_handle <Scalar> >::iterator it =
                   std::find(_fcs.begin(), _fcs.end(), edge->face());
-            assert( it != _fcs.end() );
             std::iter_swap(it, _fcs.rbegin());
             return _fcs.back();
          }
@@ -737,26 +679,14 @@ protected:
 
    void fix_correctness(const edge_handle <Scalar> & e0)
    {
-//      std::cout << "fixing " << e0 << std::endl;
-
       if(e0->constraint())
          return;
       edge_handle<Scalar> e1 = e0->next(), e2 = e1->next();
       vertex_handle<Scalar> v0 = e0->vertex(), v1 = e1->vertex(), v2 = e2->vertex();
       vertex_handle<Scalar> v = e0->twin()->prev()->vertex();
 
-      if(contains(v0, v1, v2, v))
+      if(contains(v0, v1, v2, v) || contains(v1, v0, v, v2))
       {
-//         std::cout << v0 << v1 << v2 << " contains " << v << std::endl;
-         flip(e0);
-         fix_correctness(e0->next());
-         fix_correctness(e0->prev());
-         fix_correctness(e0->twin()->next());
-         fix_correctness(e0->twin()->prev());
-      }
-      else if(contains(v1, v0, v, v2))
-      {
-//         std::cout << v1 << v0 << v << " contains " << v2 << std::endl;
          flip(e0);
          fix_correctness(e0->next());
          fix_correctness(e0->prev());
