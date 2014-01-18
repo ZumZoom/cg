@@ -19,3 +19,6 @@ target_link_libraries(contour_contains_point visualization ${GMP_LIBRARIES})
 
 add_executable(ccw_convex_contains_point ccw_convex_contains_point.cpp)
 target_link_libraries(ccw_convex_contains_point visualization ${GMP_LIBRARIES})
+
+add_executable(segment_union segment_union.cpp)
+target_link_libraries(segment_union visualization ${GMP_LIBRARIES})

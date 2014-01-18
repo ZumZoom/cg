@@ -21,6 +21,7 @@ set(SOURCES
    convex_hull.cpp
    dynamic_convex_hull.cpp
    convex.cpp
+   segment_union.cpp
 )
 
 add_executable(cg-test ${SOURCES})
