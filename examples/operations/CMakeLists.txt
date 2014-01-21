@@ -19,3 +19,6 @@ target_link_libraries(contour_contains_point visualization ${GMP_LIBRARIES})
 
 add_executable(ccw_convex_contains_point ccw_convex_contains_point.cpp)
 target_link_libraries(ccw_convex_contains_point visualization ${GMP_LIBRARIES})
+
+add_executable(triangle_raster triangle_raster.cpp)
+target_link_libraries(triangle_raster visualization ${GMP_LIBRARIES})
